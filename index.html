@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DevPet — ton compagnon de code</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1d1d1b;--mute:#6b6a65;--line:#e3e1da;--accent:#3d6ef0;--good:#2f9e6b;--warn:#e0902b;--bad:#d4493f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15161a;--card:#1f2127;--ink:#ececea;--mute:#9a9a94;--line:#31343c;--accent:#6c93ff;--good:#4cc790;--warn:#f0a94a;--bad:#ee6d63}}
+:root[data-theme="dark"]{--bg:#15161a;--card:#1f2127;--ink:#ececea;--mute:#9a9a94;--line:#31343c;--accent:#6c93ff;--good:#4cc790;--warn:#f0a94a;--bad:#ee6d63}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+main{max-width:940px;margin:0 auto;padding:18px 16px 36px}
+h1{font-size:21px;margin:0 0 2px}
+.sub{color:var(--mute);margin:0 0 14px;font-size:14px}
+.top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input,select,button{font:inherit;font-size:14px;padding:8px 11px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+input{flex:1;min-width:150px}
+button{cursor:pointer}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.banner{font-size:13px;padding:9px 12px;border-radius:10px;margin-bottom:12px;border:1px solid var(--line);background:var(--card)}
+.banner.demo{border-color:var(--warn)}
+.banner.live{border-color:var(--good)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:0 0 10px}
+.wide{grid-column:1/-1}
+#petbox{text-align:center}
+#bubble{display:inline-block;max-width:92%;font-size:13px;padding:7px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--line);margin-bottom:4px}
+svg#pet{width:100%;max-width:230px;height:auto;display:block;margin:0 auto}
+.name{font-weight:700;font-size:18px}
+.badge{display:inline-block;font-size:12px;padding:2px 9px;border-radius:99px;background:var(--bg);border:1px solid var(--line);margin:4px 3px 0}
+.bar{margin:9px 0}
+.bar label{display:flex;justify-content:space-between;font-size:13px;color:var(--mute)}
+.track{height:9px;background:var(--bg);border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;border-radius:9px;transition:width .5s}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:14px;margin:12px 0 0}
+.kv span:nth-child(odd){color:var(--mute)}
+.heat{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+.heat i{aspect-ratio:1;border-radius:4px;background:var(--bg);border:1px solid var(--line);display:block}
+.evo{display:flex;gap:6px;flex-wrap:wrap;font-size:13px}
+.evo span{padding:5px 10px;border-radius:8px;border:1px dashed var(--line);color:var(--mute)}
+.evo span.cur{border:1px solid var(--accent);color:var(--ink);background:var(--bg);font-weight:600}
+.rules{font-size:13px;color:var(--mute);margin:0;padding-left:18px}
+.compact .extra{display:none}
+.compact .top{display:none}
+.compact .banner.live{display:none}
+.compact main{padding:8px}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+#pet g.body{animation:bob 2.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){#pet g.body{animation:none}}
+</style>
+</head>
+<body>
+<main>
+<h1>🐣 DevPet</h1>
+<p class="sub">Un compagnon qui grandit avec ton activité GitHub réelle (commits, langages, régularité, heures de code).</p>
+
+<div class="top extra-top">
+  <input id="user" type="text" placeholder="Nom d'utilisateur GitHub" aria-label="Nom d'utilisateur GitHub">
+  <button class="primary" id="go">Analyser</button>
+  <select id="demo" aria-label="Mode démo">
+    <option value="">Mode démo…</option>
+    <option value="debutant">Débutant</option>
+    <option value="regulier">Régulier (backend)</option>
+    <option value="fullstack">Full-stack assidu</option>
+    <option value="noctambule">Noctambule</option>
+    <option value="inactif">Inactif depuis une semaine</option>
+  </select>
+</div>
+<div id="banner" class="banner" hidden></div>
+
+<div class="grid">
+  <section class="card" id="petbox">
+    <h2>Ton compagnon</h2>
+    <div id="bubble">…</div>
+    <svg id="pet" viewBox="0 0 200 200" role="img" aria-label="Animal virtuel"></svg>
+    <div class="name" id="pname">—</div>
+    <div id="badges"></div>
+    <div class="bar"><label><span>Énergie</span><span id="v-energy"></span></label><div class="track"><div class="fill" id="b-energy" style="background:var(--warn)"></div></div></div>
+    <div class="bar"><label><span>Bonheur</span><span id="v-happy"></span></label><div class="track"><div class="fill" id="b-happy" style="background:var(--good)"></div></div></div>
+    <div class="bar"><label><span>XP</span><span id="v-xp"></span></label><div class="track"><div class="fill" id="b-xp" style="background:var(--accent)"></div></div></div>
+  </section>
+
+  <section class="card extra">
+    <h2>Habitudes détectées</h2>
+    <div class="kv" id="kv"></div>
+    <h2 style="margin-top:16px">28 derniers jours</h2>
+    <div class="heat" id="heat"></div>
+  </section>
+
+  <section class="card wide extra">
+    <h2>Évolution</h2>
+    <div class="evo" id="evo"></div>
+    <p class="sub" style="margin:10px 0 0">Forme finale selon ton langage dominant : <b>Backend</b> → Golem, <b>Frontend</b> → Chat, <b>IA / data</b> → Hibou, profil mixte → <b>Dragon</b>.</p>
+  </section>
+
+  <section class="card wide extra">
+    <h2>Comment ça marche</h2>
+    <ul class="rules">
+      <li><b>XP</b> = commits des 90 derniers jours + nombre de dépôts publics + série en cours.</li>
+      <li><b>Bonheur</b> monte avec tes commits récents et ta série, et baisse si tu disparais plusieurs jours.</li>
+      <li><b>Énergie</b> baisse avec les commits de nuit (23h–5h) et les grosses journées ; elle remonte quand tu te reposes.</li>
+      <li>Source : API GitHub, ~90 derniers jours d'événements. Sans backend : dépôts publics uniquement (60 requêtes/h par visiteur). Avec le backend et un jeton : activité privée comprise. Cache de 30 min.</li>
+    </ul>
+  </section>
+</div>
+</main>
+
+<script>
+/* ===== Configuration ===== */
+const CONFIG = {
+  user: "Mohamed-Gazali",
+  cacheMin: 30,
+  // URL de ton backend FastAPI (celui qui détient le jeton GitHub).
+  // En local (localhost), le backend sur le port 8000 est utilisé automatiquement.
+  // En production : remplace "" par l'URL de ton backend déployé.
+  // Avec "" , seule l'API publique GitHub est utilisée.
+  apiBase: (location.hostname === "localhost" || location.hostname === "127.0.0.1") ? "http://localhost:8000" : ""
+};
+
+const qs = new URLSearchParams(location.search);
+const USER = (qs.get("user") || CONFIG.user).trim();
+if (qs.get("compact") === "1") document.documentElement.classList.add("compact");
+
+/* ===== Constantes ===== */
+const STAGES = [{n:"Œuf",t:0},{n:"Bébé",t:30},{n:"Jeune",t:120},{n:"Adulte",t:300}];
+const SPECIES = {back:"Golem", front:"Chat", ai:"Hibou", bal:"Dragon"};
+const COLORS = {back:"#4f7df0", front:"#ee8340", ai:"#8b63d6", bal:"#34b58a", baby:"#9bb8a8"};
+const LANG_MAP = {
+  back:["Python","Java","Go","PHP","C#","C","C++","Rust","Ruby","Kotlin","SQL","PLpgSQL","Shell","Dockerfile","PowerShell"],
+  front:["JavaScript","TypeScript","HTML","CSS","SCSS","Vue","Svelte","Dart"],
+  ai:["Jupyter Notebook","R"]
+};
+const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+const pad = n => String(n).padStart(2, "0");
+const dayKey = d => d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+/* ===== GitHub ===== */
+async function gh(url){
+  const r = await fetch(url, {headers:{Accept:"application/vnd.github+json"}});
+  if (r.status === 404) throw new Error("NOTFOUND");
+  if (r.status === 403 || r.status === 429) throw new Error("RATE");
+  if (!r.ok) throw new Error("HTTP");
+  return r.json();
+}
+
+let lastSource = "public";
+async function fetchStats(user){
+  const key = "devpet:" + user.toLowerCase();
+  try {
+    const c = JSON.parse(localStorage.getItem(key) || "null");
+    if (c && Date.now() - c.ts < CONFIG.cacheMin * 60000){ lastSource = c.src || "public"; return c.stats; }
+  } catch(e){}
+  const keep = (stats, src) => {
+    lastSource = src;
+    try { localStorage.setItem(key, JSON.stringify({ts: Date.now(), stats, src})); } catch(e){}
+    return stats;
+  };
+  // Compte du propriétaire + backend configuré : données complètes (privées incluses)
+  if (CONFIG.apiBase && user.toLowerCase() === CONFIG.user.toLowerCase()){
+    try {
+      const r = await fetch(CONFIG.apiBase.replace(/\/$/, "") + "/api/stats");
+      if (r.ok) return keep(await r.json(), "backend");
+    } catch(e){ /* backend injoignable : repli sur l'API publique */ }
+  }
+  const base = "https://api.github.com/users/" + encodeURIComponent(user);
+  const [profile, repos, e1, e2, e3] = await Promise.all([
+    gh(base),
+    gh(base + "/repos?per_page=100&sort=pushed"),
+    gh(base + "/events/public?per_page=100&page=1"),
+    gh(base + "/events/public?per_page=100&page=2").catch(() => []),
+    gh(base + "/events/public?per_page=100&page=3").catch(() => [])
+  ]);
+  return keep(computeStats([].concat(e1, e2, e3), repos, profile), "public");
+}
+
+function computeStats(events, repos, profile){
+  const now = new Date();
+  const per = {}, hours = Array(24).fill(0);
+  let c7=0, c30=0, c90=0, n7=0, last=null;
+  const d7 = now - 7*864e5, d30 = now - 30*864e5;
+  for (const ev of events){
+    if (ev.type !== "PushEvent") continue;
+    const n = Math.max(1, (ev.payload && (ev.payload.size ?? (ev.payload.commits||[]).length)) || 1);
+    const t = new Date(ev.created_at), k = dayKey(t);
+    per[k] = (per[k]||0) + n; c90 += n;
+    if (t > d30) c30 += n;
+    if (t > d7){ c7 += n; const h = t.getHours(); if (h >= 23 || h < 5) n7 += n; }
+    hours[t.getHours()] += n;
+    if (!last || t > last) last = t;
+  }
+  let streak = 0; const d = new Date(now);
+  if (!per[dayKey(d)]) d.setDate(d.getDate()-1);
+  while (per[dayKey(d)]){ streak++; d.setDate(d.getDate()-1); }
+  const idle = last ? Math.floor((startOfDay(now) - startOfDay(last)) / 864e5) : 999;
+  const days = [];
+  for (let i=27; i>=0; i--){ const x = new Date(now); x.setDate(x.getDate()-i); days.push(per[dayKey(x)]||0); }
+  // Langages : dépôts non-forks poussés récemment (sinon tous)
+  const own = repos.filter(r => !r.fork);
+  const recent = own.filter(r => r.pushed_at && (now - new Date(r.pushed_at)) < 90*864e5);
+  const pool = recent.length ? recent : own;
+  const tr = {back:0, front:0, ai:0};
+  for (const r of pool){
+    for (const k in LANG_MAP){ if (LANG_MAP[k].includes(r.language)) tr[k]++; }
+  }
+  return {commits7:c7, commits30:c30, commits90:c90, today: per[dayKey(now)]||0, night7:n7,
+          streak, idle, days, hours, tr, repos: profile.public_repos || own.length};
+}
+
+/* ===== Démo ===== */
+function mkDays(streak, density){
+  const a = [];
+  for (let i=27; i>=0; i--) a.push(27-i >= 28-streak ? 1+Math.floor(Math.random()*4) : (Math.random()<density ? 1+Math.floor(Math.random()*3) : 0));
+  return a;
+}
+function hoursPeak(h){ const a = Array(24).fill(0); a[h]=10; a[(h+1)%24]=6; return a; }
+const PRESETS = {
+  debutant:  {commits7:3,  commits30:9,   commits90:14,  today:1, night7:0, streak:1,  idle:0,  tr:{back:1,front:1,ai:0}, repos:4,  h:15},
+  regulier:  {commits7:18, commits30:70,  commits90:190, today:3, night7:2, streak:9,  idle:0,  tr:{back:6,front:1,ai:0}, repos:14, h:10},
+  fullstack: {commits7:32, commits30:130, commits90:360, today:5, night7:3, streak:21, idle:0,  tr:{back:4,front:4,ai:1}, repos:22, h:16},
+  noctambule:{commits7:25, commits30:80,  commits90:200, today:6, night7:19,streak:6,  idle:0,  tr:{back:3,front:2,ai:3}, repos:12, h:1},
+  inactif:   {commits7:0,  commits30:6,   commits90:120, today:0, night7:0, streak:0,  idle:8,  tr:{back:3,front:3,ai:0}, repos:10, h:20}
+};
+function presetStats(k){
+  const p = PRESETS[k];
+  return Object.assign({}, p, {days: mkDays(p.streak, p.commits30/60), hours: hoursPeak(p.h)});
+}
+
+/* ===== État dérivé ===== */
+function derive(s){
+  const xp = Math.round(s.commits90*2 + Math.min(s.repos,30)*4 + s.streak*5);
+  let st = 0; STAGES.forEach((x,i)=>{ if (xp >= x.t) st = i; });
+  const tot = s.tr.back + s.tr.front + s.tr.ai;
+  let sp = "bal";
+  if (tot >= 2){
+    const m = Object.keys(s.tr).sort((a,b)=>s.tr[b]-s.tr[a])[0];
+    if (s.tr[m]/tot >= 0.55) sp = m;
+  }
+  const energy = s.idle >= 2 ? 100 : clamp(100 - s.night7*8 - s.today*2);
+  const happy = clamp(25 + s.commits7*3 + s.streak*5 - Math.max(0, s.idle-1)*12);
+  const mood = energy < 30 ? "tired" : happy < 30 ? "sad" : happy > 75 ? "joy" : "ok";
+  return {xp, st, sp, energy, happy, mood};
+}
+function say(s, d){
+  if (d.st === 0) return "Je ne suis qu'un œuf… quelques commits et j'éclos !";
+  if (s.idle >= 5) return "Ça fait " + s.idle + " jours… tu me manques, un petit commit ?";
+  if (d.mood === "tired") return "Les commits de nuit me fatiguent… dors un peu 😴";
+  if (d.mood === "sad") return "Je m'ennuie un peu. On code ensemble aujourd'hui ?";
+  if (s.streak >= 7) return "🔥 " + s.streak + " jours d'affilée, quelle régularité !";
+  if (s.today >= 3) return "Belle journée de code, merci pour les " + s.today + " commits !";
+  if (d.mood === "joy") return "Je suis en pleine forme grâce à toi !";
+  return "Prêt pour le prochain commit.";
+}
+function period(h){
+  const tot = h.reduce((a,b)=>a+b,0); if (!tot) return "—";
+  const g = {"matin":0,"après-midi":0,"soirée":0,"nuit":0};
+  h.forEach((v,i)=>{ if (i>=5&&i<=11) g["matin"]+=v; else if (i>=12&&i<=17) g["après-midi"]+=v; else if (i>=18&&i<=22) g["soirée"]+=v; else g["nuit"]+=v; });
+  return Object.keys(g).sort((a,b)=>g[b]-g[a])[0];
+}
+
+/* ===== Dessin ===== */
+function draw(st, sp, m){
+  if (st === 0) return '<g class="body"><ellipse cx="100" cy="115" rx="46" ry="58" fill="#f1ead8" stroke="#c9bfa4" stroke-width="3"/><circle cx="82" cy="100" r="7" fill="#d9ccaa"/><circle cx="116" cy="130" r="9" fill="#d9ccaa"/><circle cx="108" cy="88" r="5" fill="#d9ccaa"/></g>';
+  const col = st === 1 ? COLORS.baby : COLORS[sp];
+  const rx = [0,38,52,62][st], ry = [0,34,46,54][st], cy = 165 - ry;
+  let extra = "";
+  if (st >= 2){
+    if (sp === "back") extra = `<rect x="${100-rx*0.7}" y="${cy-ry-14}" width="14" height="22" rx="3" fill="${col}"/><rect x="${100+rx*0.7-14}" y="${cy-ry-14}" width="14" height="22" rx="3" fill="${col}"/><rect x="${100-rx}" y="${cy+4}" width="${rx*2}" height="8" fill="rgba(0,0,0,.12)"/>`;
+    if (sp === "front") extra = `<polygon points="${100-rx*0.8},${cy-ry*0.5} ${100-rx*0.55},${cy-ry-18} ${100-rx*0.2},${cy-ry*0.85}" fill="${col}"/><polygon points="${100+rx*0.8},${cy-ry*0.5} ${100+rx*0.55},${cy-ry-18} ${100+rx*0.2},${cy-ry*0.85}" fill="${col}"/><path d="M${100+rx*0.9},${cy+ry*0.4} q28,-6 20,-34" stroke="${col}" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+    if (sp === "ai") extra = `<polygon points="${100-rx*0.75},${cy-ry*0.6} ${100-rx*0.55},${cy-ry-14} ${100-rx*0.2},${cy-ry*0.9}" fill="${col}"/><polygon points="${100+rx*0.75},${cy-ry*0.6} ${100+rx*0.55},${cy-ry-14} ${100+rx*0.2},${cy-ry*0.9}" fill="${col}"/><text x="100" y="${cy-ry-6}" text-anchor="middle" font-size="20">✦</text>`;
+    if (sp === "bal") extra = `<polygon points="${100-rx*0.45},${cy-ry*0.9} ${100-rx*0.3},${cy-ry-16} ${100-rx*0.1},${cy-ry*0.95}" fill="#f4c95d"/><polygon points="${100+rx*0.45},${cy-ry*0.9} ${100+rx*0.3},${cy-ry-16} ${100+rx*0.1},${cy-ry*0.95}" fill="#f4c95d"/><path d="M${100-rx},${cy} q-30,-10 -22,-38 q16,10 22,26z M${100+rx},${cy} q30,-10 22,-38 q-16,10 -22,26z" fill="${col}" opacity=".7"/>`;
+  }
+  if (st === 3) extra += '<text x="100" y="24" text-anchor="middle" font-size="16">👑</text>';
+  const ey = cy - ry*0.15, ex = rx*0.38;
+  let eyes = "", mouth = "";
+  if (m === "tired"){ eyes = `<path d="M${100-ex-8},${ey} h16 M${100+ex-8},${ey} h16" stroke="#222" stroke-width="3.5" stroke-linecap="round"/>`; mouth = `<ellipse cx="100" cy="${ey+22}" rx="5" ry="4" fill="#222"/>`; }
+  else if (m === "sad"){ eyes = `<circle cx="${100-ex}" cy="${ey}" r="6" fill="#222"/><circle cx="${100+ex}" cy="${ey}" r="6" fill="#222"/><path d="M${100-ex-9},${ey-10} l14,4 M${100+ex+9},${ey-10} l-14,4" stroke="#222" stroke-width="3" stroke-linecap="round"/>`; mouth = `<path d="M88,${ey+26} q12,-12 24,0" stroke="#222" stroke-width="3.5" fill="none" stroke-linecap="round"/>`; }
+  else if (m === "joy"){ eyes = `<path d="M${100-ex-8},${ey+3} q8,-12 16,0 M${100+ex-8},${ey+3} q8,-12 16,0" stroke="#222" stroke-width="3.5" fill="none" stroke-linecap="round"/>`; mouth = `<path d="M86,${ey+14} q14,18 28,0z" fill="#222"/>`; }
+  else { eyes = `<circle cx="${100-ex}" cy="${ey}" r="6" fill="#222"/><circle cx="${100+ex}" cy="${ey}" r="6" fill="#222"/>`; mouth = `<path d="M90,${ey+18} q10,9 20,0" stroke="#222" stroke-width="3.5" fill="none" stroke-linecap="round"/>`; }
+  const zz = m === "tired" ? `<text x="${100+rx*0.75}" y="${cy-ry*0.6}" font-size="18" fill="#888">z<tspan font-size="13">z</tspan></text>` : "";
+  return `<g class="body">${extra}<ellipse cx="100" cy="${cy}" rx="${rx}" ry="${ry}" fill="${col}"/><ellipse cx="${100-rx*0.35}" cy="${cy-ry*0.55}" rx="${rx*0.2}" ry="${ry*0.12}" fill="#fff" opacity=".28"/>${eyes}${mouth}${zz}</g>`;
+}
+
+/* ===== Rendu ===== */
+const $ = id => document.getElementById(id);
+function sanitize(s){
+  const n = v => Number.isFinite(Number(v)) ? Number(v) : 0;
+  const arr = (a, len) => Array.from({length: len}, (_, i) => n(a && a[i]));
+  const tr = (s && s.tr) || {};
+  return {commits7:n(s.commits7), commits30:n(s.commits30), commits90:n(s.commits90), today:n(s.today),
+          night7:n(s.night7), streak:n(s.streak), idle:n(s.idle), days:arr(s.days,28), hours:arr(s.hours,24),
+          tr:{back:n(tr.back), front:n(tr.front), ai:n(tr.ai)}, repos:n(s.repos)};
+}
+function render(s){
+  s = sanitize(s || {});
+  const d = derive(s);
+  $("pet").innerHTML = draw(d.st, d.sp, d.mood);
+  $("bubble").textContent = say(s, d);
+  $("pname").textContent = d.st === 0 ? "Un œuf mystérieux" : d.st === 1 ? "Bébé Bit" : "Bit le " + SPECIES[d.sp] + (d.st === 2 ? " (jeune)" : "");
+  const mood = {tired:"😴 Fatigué", sad:"😞 Triste", joy:"😄 Épanoui", ok:"🙂 Content"}[d.mood];
+  $("badges").innerHTML = `<span class="badge">${mood}</span><span class="badge">🔥 Série : ${s.streak} j</span>` + (s.night7 >= 5 ? `<span class="badge">🌙 Noctambule</span>` : "");
+  const nxt = STAGES[d.st+1], base = STAGES[d.st].t;
+  const pct = nxt ? (d.xp - base) / (nxt.t - base) * 100 : 100;
+  $("v-energy").textContent = d.energy + "%"; $("b-energy").style.width = d.energy + "%";
+  $("v-happy").textContent = d.happy + "%";   $("b-happy").style.width = d.happy + "%";
+  $("v-xp").textContent = d.xp + (nxt ? " / " + nxt.t : " (max)"); $("b-xp").style.width = clamp(pct) + "%";
+  $("evo").innerHTML = STAGES.map((x,i)=>`<span class="${i===d.st?"cur":""}">${["🥚","🐣","🐾","👑"][i]} ${x.n}</span>`).join("→");
+  const tot = s.tr.back + s.tr.front + s.tr.ai;
+  const dom = tot ? Object.keys(s.tr).sort((a,b)=>s.tr[b]-s.tr[a])[0] : null;
+  const names = {back:"Backend", front:"Frontend", ai:"IA / data"};
+  $("kv").innerHTML = [
+    ["Commits (7 j)", s.commits7],["Commits (30 j)", s.commits30],["Commits (90 j)", s.commits90],
+    ["Série actuelle", s.streak + " jour(s)"],
+    ["Dernière activité", s.idle >= 999 ? "—" : s.idle === 0 ? "aujourd'hui" : "il y a " + s.idle + " j"],
+    ["Moment préféré", period(s.hours)],
+    ["Commits de nuit (7 j)", s.night7],
+    ["Profil dominant", dom ? names[dom] + (d.sp === "bal" ? " (mixte)" : "") : "—"],
+    ["Dépôts publics", s.repos]
+  ].map(r=>`<span>${r[0]}</span><span>${r[1]}</span>`).join("");
+  const max = Math.max(1, ...s.days);
+  $("heat").innerHTML = s.days.map(n=>`<i title="${n} commit(s)" style="${n?`background:var(--accent);opacity:${0.25+0.75*n/max}`:""}"></i>`).join("");
+}
+
+function banner(kind, text){
+  const b = $("banner"); b.hidden = !text; b.className = "banner " + kind; b.textContent = text || "";
+}
+
+async function run(user){
+  banner("", "Analyse de @" + user + "…");
+  try {
+    const s = await fetchStats(user);
+    render(s);
+    banner("live", "Données réelles de github.com/" + user + (lastSource === "backend" ? " (activité publique et privée)." : " (dépôts publics)."));
+  } catch(e){
+    const why = e.message === "NOTFOUND" ? "Utilisateur GitHub introuvable." :
+                e.message === "RATE" ? "Limite de l'API GitHub atteinte, réessaie plus tard." :
+                "Impossible de joindre GitHub (hors-ligne ou bloqué).";
+    banner("demo", why + " Affichage du mode démo.");
+    render(presetStats("fullstack"));
+  }
+}
+
+/* ===== Événements ===== */
+$("user").value = USER;
+$("go").addEventListener("click", () => { const v = $("user").value.trim(); if (v) { $("demo").value = ""; run(v); } });
+$("user").addEventListener("keydown", e => { if (e.key === "Enter") $("go").click(); });
+$("demo").addEventListener("change", e => {
+  const k = e.target.value; if (!k) return;
+  render(presetStats(k)); banner("demo", "Mode démo : données simulées (« " + e.target.options[e.target.selectedIndex].text + " »).");
+});
+run(USER);
+</script>
+</body>
+</html>
